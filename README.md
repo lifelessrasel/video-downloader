@@ -1,59 +1,198 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Video Downloader Installation Guide (Ubuntu/Linux)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This guide details how to deploy the Video Downloader application on a clean Ubuntu server (20.04/22.04/24.04).
 
-## About Laravel
+## 1. System Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Ensure your server matches these requirements:
+- **OS**: Ubuntu 20.04 or higher
+- **Web Server**: Nginx (preferred) or Apache
+- **PHP**: 8.2 or higher
+- **Database**: MySQL 8.0+ or MariaDB 10.6+
+- **Cache/Queue**: Redis (Critical for performance and job handling)
+- **Tools**: FFmpeg, Python 3, yt-dlp, aria2c
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 2. Install Dependencies
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Run the following commands as `root` or using `sudo`:
 
-## Learning Laravel
+```bash
+# Update System
+sudo apt update && sudo apt upgrade -y
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+# Install Basic Tools
+sudo apt install -y git curl zip unzip git supervisor python3-pip aria2 ffmpeg
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# Install Nginx
+sudo apt install -y nginx
 
-## Laravel Sponsors
+# Install PHP 8.2/8.3 and extensions
+sudo apt install -y software-properties-common
+sudo add-apt-repository ppa:ondrej/php -y
+sudo apt update
+sudo apt install -y php8.2 php8.2-fpm php8.2-cli php8.2-common php8.2-mysql php8.2-zip php8.2-gd php8.2-mbstring php8.2-curl php8.2-xml php8.2-bcmath php8.2-redis php8.2-intl
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# Install Composer
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
 
-### Premium Partners
+# Install Node.js (for frontend assets)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Install yt-dlp (Latest Version is Required)
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
+sudo yt-dlp -U # Update to make sure
+```
 
-## Contributing
+## 3. Install Redis
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Redis is required for the download queue and analytics.
 
-## Code of Conduct
+```bash
+sudo apt install -y redis-server
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 4. Application Setup
 
-## Security Vulnerabilities
+Navigate to your web directory (e.g., `/var/www/html`):
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+cd /var/www/html
+git clone https://github.com/lifelessrasel/video-downloader.git
+cd video-downloader
+```
 
-## License
+### Configure Permissions
+```bash
+sudo chown -R www-data:www-data /var/www/html/video-downloader
+sudo chmod -R 775 /var/www/html/video-downloader/storage
+sudo chmod -R 775 /var/www/html/video-downloader/bootstrap/cache
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Install Dependencies
+```bash
+# PHP Dependencies
+composer install --optimize-autoloader --no-dev
+
+# Frontend Dependencies
+npm install
+npm run build
+```
+
+### Environment Configuration
+```bash
+cp .env.example .env
+nano .env
+```
+
+Update the following in `.env`:
+- `APP_URL=https://your-domain.com`
+- `DB_...` details
+- `QUEUE_CONNECTION=redis` (IMPORTANT)
+- `CACHE_STORE=redis`
+- `SESSION_DRIVER=redis`
+
+### Database Setup
+```bash
+php artisan key:generate
+php artisan migrate --seed
+```
+
+## 5. Queue Worker Setup (Supervisor)
+
+The application uses a background queue to process downloads. This **must** be kept running.
+
+Create a Supervisor config:
+`sudo nano /etc/supervisor/conf.d/video-downloader.conf`
+
+Paste content:
+```ini
+[program:video-downloader-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/html/video-downloader/artisan queue:listen --timeout=600 --tries=3
+autostart=true
+autorestart=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/www/html/video-downloader/storage/logs/worker.log
+stopwaitsecs=3600
+```
+*Note: We use `queue:listen` and `--timeout=600` (10 minutes) to allow large file processing.*
+
+Enable and Start:
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start video-downloader-worker:*
+```
+
+## 6. Nginx Configuration
+
+Create a config file:
+`sudo nano /etc/nginx/sites-available/video-downloader`
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /var/www/html/video-downloader/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+    
+    # Increase timeout for long downloads serving
+    fastcgi_read_timeout 600;
+    client_max_body_size 100M;
+}
+```
+
+Enable site:
+```bash
+sudo ln -s /etc/nginx/sites-available/video-downloader /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## 7. Cron Jobs (Optional but Recommended)
+
+For cleaning up old files:
+
+```bash
+crontab -e
+```
+Add:
+```
+* * * * * cd /var/www/html/video-downloader && php artisan schedule:run >> /dev/null 2>&1
+```
+
+## Done!
+Access your site at `http://your-domain.com`.
+Admin Panel at `/login`.
