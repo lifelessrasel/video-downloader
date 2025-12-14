@@ -5,9 +5,9 @@ This guide details how to deploy the Video Downloader application on a clean Ubu
 ## 1. System Requirements
 
 Ensure your server matches these requirements:
-- **OS**: Ubuntu 20.04 or higher
+- **OS**: Ubuntu 22.04 or higher
 - **Web Server**: Nginx (preferred) or Apache
-- **PHP**: 8.2 or higher
+- **PHP**: 8.4 stable
 - **Database**: MySQL 8.0+ or MariaDB 10.6+
 - **Cache/Queue**: Redis (Critical for performance and job handling)
 - **Tools**: FFmpeg, Python 3, yt-dlp, aria2c
